@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+
+</style>
+</head>
+
+<body> 
+
+<div id='light0' style='top:302.5px; left:205px'></div>
+<div id='light1' style='top:348px; left:395px'></div>
+<div id='light2' style='top:295px; left:555px'></div>
+<div id='light3' style='top:490px; left:184px'></div>
+<div id='light4' style='top:533px; left:313px'></div>
+<div id='light5' style='top:495px; left:565px'></div>
+<div id='light6' style='top:667px; left:81px'></div>
+<div id='light7' style='top:725px; left:390px'></div>
+<div id='light8' style='top:670px; left:645px'></div>
+<div id='light9' style='top:918px; left:24px'></div>
+<div id='light10' style='top:1003px; left:340px'></div>
+<div id='light11' style='top:915px; left:736px'></div>
+
+<button id="switch" style="position:absolute;top:70px;left:380px">Switch</button>
+<img src="https://i.imgur.com/Awu7zT7.png" style = width = "804" height = "1190">
+<p id="title" style="font-size:32px;font-weight:bold;position:absolute;top:30px;left:165px;color:#42a1f4;">Press Here =></p>
+<h1 style="position:absolute;top:40px;left:700px"> 3W3D_HW1 (<a href="https://jsfiddle.net/t012tw11/cexqp3g1/">jsfiddle)</h1>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
+
+class Light {
+	constructor (name,color,type){
+		this.name = '#' + name;
+		this.title = '#' + 'title';
+		this.color = color;
+		this.state = false;
+		this.shut = shut;
+		$(this.name).css ("position", "absolute");
+		$(this.name).css ("border-radius", "100em");
+		if(type === 1){
+			$(this.name).css ("width", "70px");
+			$(this.name).css ("height", "70px");
+		}
+		else if(type === 2){
+			$(this.name).css ("width", "60px");
+			$(this.name).css ("height", "60px");
+		}
+		else if(type === 3){
+			$(this.name).css ("width", "75px");
+			$(this.name).css ("height", "75px");
+		}
+		else if(type === 4){
+			$(this.name).css ("width", "83px");
+			$(this.name).css ("height", "83px");
+		}
+		else if(type === 5){
+			$(this.name).css ("width", "47px");
+			$(this.name).css ("height", "47px");
+		}
+		$(this.name).css ('background-color', "hsl(0, 0%, 50%)");
+	}
+	turnOff() {
+		$(this.name).css ('background-color', "hsl(0, 0%, 50%)");
+		$(this.title).css ('color', "hsl(208, 89%, 61%)");
+	}
+	randomCol() {
+		let num = Math.floor(Math.random() * 360);
+		return "hsl(" + num + ",100%,78%)";
+	}
+	update(name) {
+		this.status = !this.status;
+		if (this.status) {
+			$(name).css ('background-color', this.randomCol);
+			$(this.title).css ('color', this.randomCol);
+		} else {
+			$(name).css ('background-color', this.randomCol);
+			$(this.title).css ('color', this.randomCol);
+		}
+	}
+}
+var toggle = false;
+var shut;
+var Lamps = [];
+
+init();
+
+function init() {
+	var l0 = new Light('light0' , "hsl(0, 0%, 50%)" , 1);
+	Lamps.push(l0);
+	var l1 = new Light('light1' , "hsl(0, 0%, 50%)" , 2);
+	Lamps.push(l1);
+	var l2 = new Light('light2' , "hsl(0, 0%, 50%)" , 3);
+	Lamps.push(l2);
+	var l3 = new Light('light3' , "hsl(0, 0%, 50%)" , 2);
+	Lamps.push(l3);
+	var l4 = new Light('light4' , "hsl(0, 0%, 50%)" , 4);
+	Lamps.push(l4);
+	var l5 = new Light('light5' , "hsl(0, 0%, 50%)" , 4);
+	Lamps.push(l5);
+	var l6 = new Light('light6' , "hsl(0, 0%, 50%)" , 2);
+	Lamps.push(l6);
+	var l7 = new Light('light7' , "hsl(0, 0%, 50%)" , 1);
+	Lamps.push(l7);
+	var l8 = new Light('light8' , "hsl(0, 0%, 50%)" , 2);
+	Lamps.push(l8);
+	var l9 = new Light('light9' , "hsl(0, 0%, 50%)" , 1);
+	Lamps.push(l9);
+	var l10 = new Light('light10' , "hsl(0, 0%, 50%)" , 5);
+	Lamps.push(l10);
+	var l11 = new Light('light11' , "hsl(0, 0%, 50%)" , 1);
+	Lamps.push(l11);
+}
+
+function toggleBlink() {
+	shut = setInterval (function() {start();}, 500);
+}
+
+function start() {
+	for(let i = 0; i < Lamps.length ; i++){
+		Lamps[i].update(Lamps[i].name);
+	}
+}
+
+function check(){
+	if(toggle){
+		console.log('work on')
+		toggleBlink();
+	}
+	else if(!toggle){
+		console.log('work off')
+		clearInterval(shut);
+		for(let i = 0; i < Lamps.length ; i++){
+			Lamps[i].turnOff();
+		}
+	}
+}
+
+$('#switch').click (function() {
+	toggle = !toggle;
+	check();
+});
+
+
+</script>
+</body>
+</html>
