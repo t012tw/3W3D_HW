@@ -24,6 +24,7 @@
 <div id='light11' style='top:915px; left:736px'></div>
 
 <button id="switch" style="position:absolute;top:70px;left:380px">Switch</button>
+<button id="speed" style="position:absolute;top:70px;left:500px">Speed Change</button>
 <img src="https://i.imgur.com/Awu7zT7.png" style = width = "804" height = "1190">
 <p id="title" style="font-size:32px;font-weight:bold;position:absolute;top:30px;left:165px;color:#42a1f4;">Press Here =></p>
 <h1 style="position:absolute;top:40px;left:700px"> 3W3D_HW1 (<a href="https://jsfiddle.net/t012tw11/cexqp3g1/">jsfiddle)</h1>
@@ -82,8 +83,10 @@ class Light {
 	}
 }
 var toggle = false;
-var shut;
+var shut,another;
 var Lamps = [];
+var speed = false;
+var normalFlash = false;
 
 init();
 
@@ -115,7 +118,18 @@ function init() {
 }
 
 function toggleBlink() {
+	clearInterval(another);
+	normalFlash = true;
 	shut = setInterval (function() {start();}, 500);
+}
+
+function chgSpeed() {
+	if(toggle) clearInterval(shut);
+	if(speed)another = setInterval (function() {start();}, Math.floor(Math.random() * 200) + 100);
+	else if(!speed) {
+		clearInterval(another);
+		toggleBlink();
+	}
 }
 
 function start() {
@@ -125,13 +139,15 @@ function start() {
 }
 
 function check(){
-	if(toggle){
+	if(toggle && !normalFlash){
 		console.log('work on')
 		toggleBlink();
 	}
 	else if(!toggle){
 		console.log('work off')
+		normalFlash = false;
 		clearInterval(shut);
+		clearInterval(another);
 		for(let i = 0; i < Lamps.length ; i++){
 			Lamps[i].turnOff();
 		}
@@ -142,6 +158,11 @@ $('#switch').click (function() {
 	toggle = !toggle;
 	check();
 });
+$('#speed').click (function() {
+	speed = !speed;
+	chgSpeed();
+});
+
 
 
 </script>
