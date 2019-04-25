@@ -112,7 +112,7 @@ var keyboard = new KeyboardState();
 var bulb = [];
 var camera,camera2,camera3,camera4,camera5,camera6,camera7,camera8;
 var cameraR2,cameraR3,cameraR4,cameraR5;
-var Guide = 0;
+var Guide = 0,temp = 0;
 var lamp4;
 var boxcr2 = new THREE.Object3D();
 var boxcr3 = new THREE.Object3D();
@@ -121,33 +121,46 @@ var boxcr5 = new THREE.Object3D();
 var ang2=0,ang3=0,ang4=0,ang5=0;
 var str2 = true,str3 = true,str4 = true,str5 = true;
 var MM = '1';
-
+var alpha = 0,sign = 1,star = false;
+var checkpoint;
+var p1,p2,p3,p4,p5,p6,p7,p8,lk1,lk2,lk3,lk4,lk5,lk6,lk7,lk8;
+var ck = true,ck2 = true,canMove = true;
+var plk;
 
 $('.Map').click(function(e) {
 	e.preventDefault();
-	if (this.id === '1') {
-		Guide = 0;
-	} 
-	else if(this.id === '2') {
-		Guide = 1;
-	}
-	else if(this.id === '3') {
-		Guide = 2;
-	}
-	else if(this.id === '4') {
-		Guide = 3;
-	}
-	else if(this.id === '5') {
-		Guide = 4;
-	}
-	else if(this.id === '6') {
-		Guide = 5;
-	}
-	else if(this.id === '7') {
-		Guide = 6;
-	}
-	else if(this.id === '8') {
-		Guide = 7;
+	if(canMove){
+		if(!star)temp = Guide + 1;
+		star = true;
+		if (this.id === '1') {	
+			Guide = 0;
+		} 
+		else if(this.id === '2') {
+			Guide = 1;
+		}
+		else if(this.id === '3') {
+			Guide = 2;
+		}
+		else if(this.id === '4') {
+			Guide = 3;
+		}
+		else if(this.id === '5') {
+			Guide = 4;
+		}
+		else if(this.id === '6') {
+			Guide = 5;
+		}
+		else if(this.id === '7') {
+			Guide = 6;
+		}
+		else if(this.id === '8') {
+			Guide = 7;
+		}
+		if(ck2){
+			if(temp === 8) plk = lk1.clone();if(temp === 1) plk = lk2.clone();if(temp === 2) plk = lk3.clone();if(temp === 3) plk = lk4.clone();if(temp === 4) plk = lk5.clone();if(temp === 5) plk = lk6.clone();if(temp === 6) plk = lk7.clone();if(temp === 7) plk = lk8.clone();
+			plk.y = 200;
+			ck2 = false;
+		}
 	}
 })
 
@@ -255,13 +268,6 @@ function init() {
 	$("#container").append(renderer.domElement);
 	
 	camera = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera2 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera3 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera4 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera5 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera6 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera7 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
-	camera8 = new THREE.PerspectiveCamera(60, ww / hh, 1, 1000);
 	
 	var ww2 = $("#container2").innerWidth();
 	var hh2 = $("#container2").innerHeight();
@@ -515,31 +521,26 @@ function init() {
 	bulb.forEach (function(a) {scene.add(a.tar)});	
 	
 	///////////////////////////          camera             ////////////////////////////////////// 
-	
-	camera.position.set(150,80,-10);
+	p1 = new THREE.Vector3(150,80,-10);//Camera pos
+	p2 = new THREE.Vector3(220,80,-50);
+	p3 = new THREE.Vector3(220,80,50);
+	p4 = new THREE.Vector3(150,80,10);
+	p5 = new THREE.Vector3(-150,80,10);
+	p6 = new THREE.Vector3(-220,80,50);
+	p7 = new THREE.Vector3(-220,80,-50);
+	p8 = new THREE.Vector3(-150,80,-10);
+	lk1 = new THREE.Vector3(150,30,-165);//Camera looAt
+	lk2 = new THREE.Vector3(300,50,-165);
+	lk3 = new THREE.Vector3(300,50,165);
+	lk4 = new THREE.Vector3(150,30,165);
+	lk5 = new THREE.Vector3(-150,30,165);
+	lk6 = new THREE.Vector3(-300,50,165);
+	lk7 = new THREE.Vector3(-300,50,-165);
+	lk8 = new THREE.Vector3(-150,30,-165);
+
+	camera.position.set(150,80,-10);//init
 	camera.lookAt(150,30,-165);
-	
-	camera2.position.set(220,80,-50);
-	camera2.lookAt(300,50,-165);
-	
-	camera3.position.set(220,80,50);
-	camera3.lookAt(300,50,165);
-	
-	camera4.position.set(150,80,10);
-	camera4.lookAt(150,30,165);
-	
-	camera5.position.set(-150,80,10);
-	camera5.lookAt(-150,30,165);
-	
-	camera6.position.set(-220,80,50);
-	camera6.lookAt(-300,50,165);
-	
-	camera7.position.set(-220,80,-50);
-	camera7.lookAt(-300,50,-165);
-	
-	camera8.position.set(-150,80,-10);
-	camera8.lookAt(-150,30,-165);
-	
+
 	scene.add(boxcr2,boxcr3,boxcr4,boxcr5);
 	
 	boxcr2.add(cameraR2);
@@ -616,59 +617,54 @@ function init() {
 	
 	scene.add(Exhibits,Exhibits2,Exhibits3,Exhibits4,Exhibits5,Exhibits6,Exhibits7,Exhibits8);
 	
+	checkpoint = new THREE.Vector3(0,200,0);
+	
 	//window.addEventListener('resize', onWindowResize, false);
 }
 
 function animate() {
 
 	//controls.update();
-	keyboard.update();
 
 	bulb.forEach (function(a) {a.update()});
-	
+
 	requestAnimationFrame(animate);
 	if(Guide === 0){
-		//controls.update();
-		renderer.render(scene, camera);
 		$('#Screen').html('ViewPoint 1');
 		$('#Description').html('過去也有許多傑出的福爾摩斯影集和電影，這位全世界最出名的偵探在大眾印象中都是穿著風衣、戴帽子、叼著菸斗，在大霧迷漫的倫敦中辦案。這一次福爾摩斯要走出迷霧，在21世紀登場辦案。福爾摩斯這個辦案天才清瘦、孤僻，銳利的雙眼一眼就可以從細節解讀出線索，福爾摩斯也熟知科學辦案的方法。福爾摩斯的最佳拍檔華生醫生，是從阿富汗退役回國的軍人，一次的機緣下，華生成為福爾摩斯的室友兼夥伴，一起展開冒險。「新世紀福爾摩斯」共有三個扣人心弦的案件：一個全身穿戴打扮粉紅色的女士被發現陳屍廢棄屋中，看起來怎麼都不可能是自殺，她已經是連續第四個神秘死亡的案件，蘇格蘭警場只能求助於唯一能解開謎題的人-福爾摩斯。從金融中心到郊區馬戲團；城市到處出現神秘的密碼塗鴉，見到這些密碼塗鴉的人紛紛遇害，福爾摩斯和華生能及時解開密碼嗎?福爾摩斯受邀偵查一件看似單純的案件，年輕的公務人員遭火車輾斃，豈料這是一場追逐戰的序幕，福爾摩斯必須解開五個謎題，否則就會引爆炸彈，傷及無辜，這一次福爾摩斯遇到了最強勁的對手。「新世紀福爾摩斯」在英國和美國同步播出，獲得大西洋兩岸媒體好評，英國衛報稱讚本劇「即使原作者柯南道爾也會讚許」，紐約時報評論「娛樂性十足…Martin Freeman 精準地詮釋忠心但愛發牢騷的華生，是本劇的一大亮點。」劇中福爾摩斯穿的風衣引起男性觀眾熱烈詢問，這款原本已經停產的風衣，在觀眾要求下重新製造上架。Benedict Cumberbatch 飾演福爾摩斯，1976年出生的Benedict 之前演藝重心多半是劇場，也曾演出電影如「美人心機」、「戀愛學分」和「贖罪」。他在「新世紀福爾摩斯」的演出幫助他星運大開。飾演華生的是Martin Freeman，Martin以喜劇影集「辦公室笑雲」走紅，曾經演出過電影「愛是您愛是我」和「星際大奇航」。Martin自然散發的喜感為「新世紀福爾摩斯」增添一股輕鬆的氣氛。');
 	}
 	else if(Guide === 1){
-		renderer.render(scene, camera2);
 		$('#Screen').html('ViewPoint 2');
 		$('#Description').html('1891年，西德尼·佩吉特為道爾發表在《海濱雜誌》上的《博斯科姆比溪谷秘案》畫插畫時，他為福爾摩斯設計了一頂獵鹿帽和一件圓領短披風，因為傑出的偵探必定自有偵探的派頭。獵鹿帽原本是獵人戴的（並由此得名），而現在獵鹿帽代表著偵查的裝束，即使戴獵鹿帽的人有時稱不上是偵探。');
 	}
 	else if(Guide === 2){
-		renderer.render(scene, camera3);
 		$('#Screen').html('ViewPoint 3');
 		$('#Description').html('在佩吉特筆下，福爾摩斯的形象從黑白的字裡行間躍然紙面，走入人們的生活里。他的輪廓不需要清晰，只要有一個頭戴獵鹿帽、吸著大菸斗、手持放大鏡的剪影造型，就足以讓人們辨認出這是鼎鼎大名的福爾摩斯了。');
 	}
 	else if(Guide === 3){
-		renderer.render(scene, camera4);
 		$('#Screen').html('ViewPoint 4');
 		$('#Description').html('2011年「新世紀福爾摩斯」創下空前的佳績，不但在全球造成收視熱潮，也獲得超過25項獎項的肯定，在影迷的引頸期待下，今年福爾摩斯和華生又回來了，「新世紀福爾摩斯」第二季為了回應影迷的期待，特別挑選出柯南道爾的三個經典案件加以改編，包括「情逢敵手 A Scandal in Bohemia」、「地獄犬 The Hound of Baskervilles」及「最終的問題 The Final problem」。「情逢敵手」中一件勒索案威脅了整個英國皇室的存亡，福爾摩斯和華生很快就發現案情不單純，他們必須對抗恐怖份子、粗魯的中情局幹員和來自英國政府內部的大陰謀。最令人頭痛的是所有事件都圍繞著一個麻煩人物-艾琳•阿德勒，艾琳•阿德勒的聰明和狠勁讓福爾摩斯棋逢敵手。「地獄犬」是福爾摩斯最出名的案子，一隻來自地獄的獵犬、一個目睹神秘事件的證人，傳說中的野獸真的存在嗎? 乍聽有如無稽之談，但福爾摩斯和華生來到一個秘密的軍方研究機構之後發現似乎不是空穴來風，真相到底是甚麼? 被改編過150多次的「地獄犬」是福爾摩斯案件中最出名也是最恐怖的一件。「最終的問題」中福爾摩斯的再度遇上他的死對頭，莫里亞堤是前所未見的犯罪天才，福爾摩斯和華生早就知道和他決一勝負是遲早的事，但是他們沒有想到莫里亞堤的逆襲會如此大規模；作案手法是如此大膽妄為，倫敦塔、國家銀行和監獄，莫里亞堤如入無人之境，他的佈局還不只如此，福爾摩斯和華生面對最終極的挑戰，這一次賭上所有，一定要分出你死我活!「最終的問題」原作出版於1893年，柯南道爾原本打算以此作為福爾摩斯的結局，但是後來抵不過讀者熱情的要求，又繼續寫了許多故事，總計共寫了四篇長篇、56篇短篇的福爾摩斯系列小說。');
 	}
 	else if(Guide === 4){
-		renderer.render(scene, camera5);
 		$('#Screen').html('ViewPoint 5');
 		$('#Description').html('福爾摩斯最大的敵人不再是莫里亞帝，而是心魔。無形的敵人最可怕，埋伏在潛意識裡，慢慢佔據。《新世紀福爾摩斯：地獄新娘》為第三季與第四季間推出的特別篇，故事看似獨立，卻延續第三季末，福爾摩斯被英國政府放逐東歐，搭上飛機後所發生的事件，福爾摩斯穿越時空，回到19世紀維多利亞時代辦案，一樁關於死去的新娘被指控殺夫的離奇案件，死屍怎會殺人？福爾摩斯的意識宮殿大爆發，複雜案件與心魔化身穿梭交錯，彷彿潛入夢境辦案，夢醒，結案？');
 	}
 	else if(Guide === 5){
-		renderer.render(scene, camera6);
 		$('#Screen').html('ViewPoint 6');
 		$('#Description').html('夏洛克在第二季的第一集中，亦有一幕拍攝他呆呆的拿著小提琴亂拉一通。當時他以為他的對手兼情人艾琳．艾德勒（Irene Adler）已經過世而感到沮喪，終日無所事事，對拍擋華生的說話充耳不聞，只顧拉琴。');
 	}
 	else if(Guide === 6){
-		renderer.render(scene, camera7);
 		$('#Screen').html('ViewPoint 7');
 		$('#Description').html('詹姆斯·莫里亞蒂教授（英語：Professor James Moriarty，或簡稱莫里亞蒂教授，Professor Moriarty），是一個虛構角色，為知名的偵探夏洛克·福爾摩斯的主要對手。他是公認的第一個超級反派，數學系教授，在一般人眼中擁有良好的聲譽，但其實是世界犯罪組織首腦，被福爾摩斯稱為「犯罪界的拿破崙」，最後在萊辛巴赫瀑布的決鬥中摔下瀑布死亡。');
 	}
 	else if(Guide === 7){
-		renderer.render(scene, camera8);
 		$('#Screen').html('ViewPoint 8');
 		$('#Description').html('《新世紀福爾摩斯 第四季》堪稱史上最燒腦的影集，以震撼的劇情、巧妙的敘事手法呈現。三集內容分別為「六座柴契爾夫人像」「說謊的偵探」「最後一案」。第一集將有爆炸性的結局，導致第二集出現最頹廢的福爾摩斯與充滿幻覺的華生，還出現令人毛骨悚然的連環殺手，第三集進入驚悚的推理解謎世界，福爾摩斯上了惡魔島、挑戰密室脫逃？華生有了外遇？福爾摩斯有了失散許久的親人？謎底即將揭曉。《新世紀福爾摩斯 第四季》獲2017年第69屆艾美獎「最佳電視電影獎」、「迷你影集或電視電影最佳男主角獎」（班尼迪克康柏拜區）兩項提名。');
 	}
-	
+	if(star) {
+		canMove = false;
+		moveCam(Guide);
+	}
 	if(str2)ang2 = rotat(ang2);
 	if(str3)ang3 = rotat(ang3);
 	if(str4)ang4 = rotat(ang4);
@@ -687,8 +683,238 @@ function animate() {
 	else if(MM === '2') rendererm.render(scene, cameraR3);
 	else if(MM === '3') rendererm.render(scene, cameraR4);
 	else if(MM === '4') rendererm.render(scene, cameraR5);
-		
+	
+	renderer.render(scene, camera);
 }
+
+function moveCam(toMove){
+	if (alpha <= 1 && star) alpha += 0.002*sign;
+	if(toMove === 0){
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p1.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p1.y) >= 0.1){
+			console.log(plk)
+			var pp = camera.position.clone();
+			pp.lerp (p1, alpha);
+			camera.position.copy (pp);
+			plk.lerp (lk1, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 1){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p2.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p2.y) >= 0.1){
+			var pp2 = camera.position.clone();
+			pp2.lerp (p2, alpha);
+			camera.position.copy (pp2);
+			plk.lerp (lk2, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 2){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p3.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p3.y) >= 0.1){
+			var pp3 = camera.position.clone();
+			pp3.lerp (p3, alpha);
+			camera.position.copy (pp3);
+			plk.lerp (lk3, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 3){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p4.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p4.y) >= 0.1){
+			var pp4 = camera.position.clone();
+			pp4.lerp (p4, alpha);
+			camera.position.copy (pp4);
+			plk.lerp (lk4, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 4){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p5.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p5.y) >= 0.1){
+			var pp5 = camera.position.clone();
+			pp5.lerp (p5, alpha);
+			camera.position.copy (pp5);
+			plk.lerp (lk5, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 5){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p6.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p6.y) >= 0.1){
+			var pp6 = camera.position.clone();
+			pp6.lerp (p6, alpha);
+			camera.position.copy (pp6);
+			plk.lerp (lk6, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 6){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p7.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p7.y) >= 0.1){
+			var pp7 = camera.position.clone();
+			pp7.lerp (p7, alpha);
+			camera.position.copy (pp7);
+			plk.lerp (lk7, alpha);
+			camera.lookAt(plk);
+		}
+	}
+	else if(toMove === 7){
+	
+		if(Math.abs(camera.position.x - checkpoint.x) < 0.1 && ck){
+			if(ck){
+				alpha = 0;//RESET
+				ck = false;
+			}
+		}
+		if(Math.abs(camera.position.y - p8.y) < 0.1 && !ck) {
+			star = false;
+			ck = true;
+			ck2 = true;
+			canMove = true;
+			alpha = 0;
+		}
+		if(Math.abs(camera.position.x - checkpoint.x) >= 0.1 && ck){
+			var pp = camera.position.clone();
+			pp.lerp (checkpoint, alpha);
+			camera.position.copy (pp);
+		}
+		else if(Math.abs(camera.position.y - p8.y) >= 0.1){
+			var pp8 = camera.position.clone();
+			pp8.lerp (p8, alpha);
+			camera.position.copy (pp8);
+			plk.lerp (lk8, alpha);
+			camera.lookAt(plk);
+		}
+	}
+}
+
 var sw = false;
 function rotat(ang){
 	let k = 0.005;
@@ -793,8 +1019,17 @@ function makelamp(pos,target){
 }
 
 $('#switch').click (function() {
-	Guide++;
-	if(Guide > 7) Guide =0;
+	if(canMove){
+		if(!star)temp = Guide + 1;
+		star = true;
+		Guide++;
+		if(Guide > 7) Guide =0;
+		if(ck2){
+			if(temp === 8) plk = lk1.clone();if(temp === 1) plk = lk2.clone();if(temp === 2) plk = lk3.clone();if(temp === 3) plk = lk4.clone();if(temp === 4) plk = lk5.clone();if(temp === 5) plk = lk6.clone();if(temp === 6) plk = lk7.clone();if(temp === 7) plk = lk8.clone();
+			plk.y = 200;
+			ck2 = false;
+		}
+	}
 });
 
 $('#switchLight').click (function() {
