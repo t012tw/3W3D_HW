@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+body {
+  overflow: hidden
+}
+</style>
+</head>
+<h1 style="text-align:center"> HW4: Node.js, Shelljs, Native Methods</h1>
+<hr>
+<body>
+<div id="container" style="float:left; margin:3px; width:40vw; height:40vw">
+</div>
+<div style="float:left; margin-left: 10px; width:32vw;">Current Configuration:
+  <input type=range id="size" min =1 max =100 style="width:100%">
+  <br><br>
+  <button id="toggle" style="width:100%">Toggle motion</button>
+  <p id='greeting'></p>
+</div><!--position:absolute;top:16%;left:42%;
+position:absolute;top:20%;left:60%; -->
+<p id='Collision' style="position:absolute;top:17vw;left:43vw;font-size:250%;color:white;">Collision!!</p>
+<div style="position:absolute;top:22vw;left:70vw;font-size:250%;"> 
+	Sound: <input type="checkbox" id="myCheck" onclick="myCheck()" style="zoom: 2">
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://threejs.org/build/three.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js">
+</script>
+<audio id="collisionsound" style="display:none">
+<source src="https://raw.githubusercontent.com/t012tw/Game_HW/master/GAME_HW3/sounds/dodo.wav" type='audio/wav'>
+</audio>
+<script>
+
+
+$('#toggle').click ( function() {
+	motion = !motion;
+	console.log (motion)
+});
+
+$('#size').change(function() {
+	console.log("work")
+	scaleC = $(this).val()/100;
+	radius = 5*scaleC;
+});
+
+var camera, scene, renderer, circle, radius , scaleC = 1;
+var pos, vel;
+var motion = true;
+var rectangle;
+var raycaster = new THREE.Raycaster();
+var pickables = [];
+var mouse = new THREE.Vector2();
+var stats;
+var collisionSound,sound = false;
+
+init();
+animate();
+
+function init() {
+
+	var ww = $("#container").innerWidth();
+	var hh = $("#container").innerHeight();
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize(ww, hh);
+	renderer.setClearColor(0x888888);
+	$("#container").append(renderer.domElement);
+
+	////////////////////////////////////////////////
+
+	scene = new THREE.Scene();
+	camera = new THREE.OrthographicCamera (-50,50,50,-50,1, 1000);
+	camera.position.z = 500;
+
+	rectangle = new THREE.Mesh( new THREE.PlaneGeometry( 30, 15, 32 ), new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} ) );
+	scene.add (rectangle);
+
+	radius = 5;
+	circle = new THREE.Mesh (new THREE.CircleGeometry (radius,20), new THREE.MeshBasicMaterial());
+	console.log(radius);
+	scene.add (circle);
+
+	pickPlane = new THREE.Mesh( new THREE.PlaneGeometry( 80, 80, 32 ), new THREE.MeshBasicMaterial( {color: 0x555555, side: THREE.DoubleSide} ) );
+	pickPlane.position.set(0,0,0);
+	pickables.push(pickPlane);
+
+	let geometry = new THREE.Geometry();
+	geometry.vertices.push(
+	new THREE.Vector3(-40, -40, 0),
+	new THREE.Vector3(40, -40, 0),
+	new THREE.Vector3(40, 40, 0),
+	new THREE.Vector3(-40, 40, 0),
+	new THREE.Vector3(-40, -40, 0));
+
+	let border = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+	color: 0x0000ff
+	}));
+	scene.add(border);
+
+	pos = new THREE.Vector3();
+	vel = new THREE.Vector3(5,4,0);
+	window.addEventListener('resize', onWindowResize, false);
+
+	window.addEventListener('mousedown', onDocumentMouseDown, false);
+  
+	stats = new Stats();//show the FPS
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.top = '1.5%';
+	stats.domElement.style.zIndex = 100;
+	document.body.appendChild( stats.domElement );
+	//Sound
+	collisionSound = document.getElementById ('collisionsound');
+}
+
+function onWindowResize() {
+	var ww = $("#container").innerWidth();
+	var hh = $("#container").innerHeight();
+
+	camera.aspect = ww / hh;
+	camera.updateProjectionMatrix();
+	renderer.setSize(ww, hh);
+}
+
+function animate() {
+	dt = motion ? 0.1 : 0;
+	pos.add (vel.clone().multiplyScalar(dt));
+
+	if (Math.abs(pos.x) > 40-radius) {
+		if(sound) collisionSound.play();
+		vel.x *= -1; 
+		circle.material.color.setHSL( 1, 1, 0.5 );
+		$('#Collision').css ('color', 'red');
+	}
+	else if (Math.abs(pos.y) > 40-radius) {
+		if(sound) collisionSound.play();
+		vel.y *= -1;  	
+		circle.material.color.setHSL( 1, 1, 0.5 );
+		$('#Collision').css ('color', 'red');
+	}
+	else {
+		$('#Collision').css ('color', 'white');
+		circle.material.color.setHSL( 1, 0, 1 );
+	}
+	//console.log(pos)
+	circle.position.copy (pos);
+	circle.scale.set(scaleC,scaleC,scaleC);
+
+	//for node
+	var rpos = rectangle.position;
+	var Vmax = rpos.clone().add (new THREE.Vector3(15 , 7.5 , 0));//矩形邊界
+	var Vmin = rpos.clone().sub (new THREE.Vector3(15 , 7.5 , 0));
+	var cpos = circle.position;
+
+	$.ajaxSetup({ async: false});
+	$.get("http://127.0.0.1:1337/api?Vmax_x="+ Vmax.x +"&Vmax_y="+ Vmax.y +"&Vmin_x="+ Vmin.x +"&Vmin_y="+ Vmin.y +"&cpos_x="+ cpos.x +"&cpos_y="+ cpos.y +"&radius="+ radius,  function( data ){
+		if(data && data.output){
+			var check = data.output.split (" ");
+			if(check[0] == 1){
+				if(sound) collisionSound.play();
+				$('#Collision').css ('color', 'red');
+				circle.material.color.setHSL( 1, 1, 0.5 );
+			}
+			/*else{
+				$('#Collision').css ('color', 'white');
+				circle.material.color.setHSL( 1, 0, 1 );
+			}*/
+		}
+	});
+	//crash
+	/*if(crash) $('#Collision').css ('color', 'red');
+	else $('#Collision').css ('color', 'white');*/
+
+	requestAnimationFrame(animate);
+	render();
+	stats.update();
+}
+
+function render() {
+	renderer.render(scene, camera);
+}
+
+function myCheck(){
+	sound = !sound;
+}
+
+//////////////////Mouse function//////////////////
+
+function onDocumentMouseDown(event) {
+	var viewportPos =$('#container').get(0).getBoundingClientRect(); 
+	mouse.x = ((event.clientX - viewportPos.left) / $('#container').innerWidth()) * 2 - 1;
+	mouse.y = -((event.clientY - viewportPos.top) / $('#container').innerHeight()) * 2 + 1;
+
+	raycaster.setFromCamera(mouse, camera);
+	var intersects = raycaster.intersectObjects (pickables);
+	if (intersects.length > 0) {
+		rectangle.position.copy(intersects[0].point);
+	}
+}
+
+function onWindowResize() {
+
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+</script>
+</body>
+
+</html>
