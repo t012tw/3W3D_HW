@@ -153,9 +153,8 @@ function animate() {
 	circle.scale.set(scaleC,scaleC,scaleC);
 
 	//for node
-	var rpos = rectangle.position;
-	var Vmax = rpos.clone().add (new THREE.Vector3(15 , 7.5 , 0));//矩形邊界
-	var Vmin = rpos.clone().sub (new THREE.Vector3(15 , 7.5 , 0));
+	var Vmax = rectangle.position.clone().add (new THREE.Vector3(15 , 7.5 , 0));//矩形邊界
+	var Vmin = rectangle.position.clone().sub (new THREE.Vector3(15 , 7.5 , 0));
 	var cpos = circle.position;
 
 	$.ajaxSetup({ async: false});
