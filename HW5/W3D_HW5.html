@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+body {
+  overflow: hidden
+}
+</style>
+</head>
+<h1 style="text-align:center"> HW5: THE CAR</h1>
+<hr>
+<body>
+<div id="container" style="float:left; margin:3px; width:60vw; height:60vw">
+</div>
+<div style="float:left; margin-left: 10px; width:32vw;">
+  <button id="stepB" style="width:100%">Step</button>
+  <p id="fuel"></p>
+</div>
+<p id="time" style="position:absolute;top:20%;left:78%;font-size:250%;color:red;"></p>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://threejs.org/build/three.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+
+<script>
+
+var camera, scene, renderer;
+var omega = [], theta = [], R = [];
+var carR, carG;
+var car = [new THREE.Object3D(),new THREE.Object3D()];
+var clock = new THREE.Clock();
+var stepY = false,stepG = false;
+var keyboard;
+var fuel = [];
+var engine = [true, true];
+var socket = io();
+var isRun = [false, false];
+var myID, otherID;  // either 0 or 1
+var lock = 0;
+var TT , timetmp, start = false;
+var GO = ['3','2','1','GO!',''];
+
+$("#stepB").on('mousedown', function(e) {
+  console.log('mouse down')
+   console.log(myID)
+  socket.emit ('toggle', myID);	
+  $(this).css("background-color", "yellow");
+}).on('mouseup', function(e) {
+  console.log('mouse up')
+  socket.emit ('toggle', myID);	
+  $(this).css("background-color", "white");
+});
+
+$(function () {
+
+	//socket = io();
+		
+	socket.on ('id_set', function(msg) { //id_set事件，向server要一個ClientID
+		console.log ('i am ' + msg);
+
+		// setting myID in this client
+		myID = msg;
+		if (myID === 0)
+		  otherID = 1;
+		else
+		  otherID = 0;  
+
+		if (myID === 0) {
+			$('#hud').text ('I am client 0')
+		} else {
+			$('#hud').text ('I am client 1')
+		}
+	
+	});
+	
+	socket.on ('time', function (time) {
+		//console.log (status)
+		console.log('work')
+		startCount(time);		
+	});
+
+	socket.on ('update_status', function (status) {
+		//console.log (status)
+		
+		for (let i = 0; i < status.length; i++) {
+		  //meshes[status[i].id].material.visible = true;   
+		  isRun[status[i].id] = status[i].run;
+		}
+	
+	});
+	console.log(myID)
+	console.log(otherID)
+
+});
+
+init();
+animate();
+
+function init() {
+
+	var ww = $("#container").innerWidth();
+	var hh = $("#container").innerHeight();
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize(ww, hh);
+	renderer.setClearColor(0x888888);
+	$("#container").append(renderer.domElement);
+
+	////////////////////////////////////////////////
+
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(50, ww / hh, 1, 1000);
+	camera.position.set(0, 200, 300);
+
+	var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+	scene.add(gridXZ);
+
+	let light = new THREE.PointLight(0xffffff);
+	light.position.set(100, 300, 200);
+	scene.add(light);
+
+	let controls = new THREE.OrbitControls(camera, renderer.domElement);
+	window.addEventListener('resize', onWindowResize, false);
+	/////////////
+	theta[0] = 0;
+	omega[0] = 0;
+	R[0] = 60;
+	fuel[0] = 100;
+	theta[1] = 0;
+	omega[1] = 0;
+	R[1] = 48;
+	fuel[1] = 100;
+	//////////////// Line //////////////// 
+	let geometry = new THREE.Geometry();
+	for (var i = 0, alpha = 0; i <= 60; i++) {
+		alpha += Math.PI * 2 / 60;
+		geometry.vertices.push(new THREE.Vector3(R[0] * Math.cos(alpha), 0, -R[0] * Math.sin(alpha)));
+	}
+	var border = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+		color: 0xffff00
+	}));
+	scene.add(border);
+
+
+	let geometry2 = new THREE.Geometry();
+	for (var i = 0, alpha = 0; i <= 60; i++) {
+		alpha += Math.PI * 2 / 60;
+		geometry2.vertices.push(new THREE.Vector3(R[1] * Math.cos(alpha), 0, -R[1] * Math.sin(alpha)));
+	}
+	var border2 = new THREE.Line(geometry2, new THREE.LineDashedMaterial({
+		color: 0x00ffff,
+		dashSize: 20,
+		gapSize: 20
+	}));
+	scene.add(border2);
+	border2.computeLineDistances();
+	/////////////////////////////////////// 
+
+	/*carR = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 10), new THREE.MeshLambertMaterial({
+		color: 'yellow'
+	}));
+	scene.add(carR)
+	carG = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 10), new THREE.MeshLambertMaterial({
+		color: 'green'
+	}));
+	scene.add(carG)*/
+	
+	loadCarR();
+	loadCarG();	
+	
+	// keyboard = new KeyboardState();
+}
+
+function onWindowResize() {
+  var ww = $("#container").innerWidth();
+  var hh = $("#container").innerHeight();
+
+  camera.aspect = ww / hh;
+  camera.updateProjectionMatrix();
+  renderer.setSize(ww, hh);
+}
+
+function animate() {
+	/*
+	keyboard.update();
+	if (keyboard.pressed("S"))
+		step = true;
+	else
+		step = false;
+	*/
+
+	requestAnimationFrame(animate);
+	render();
+	//////////////For Car move//////////////
+	dt = clock.getDelta();
+	if(start){
+		if (myID !== undefined) {
+			
+				if (engine[myID]) {
+					theta[myID] += omega[myID] * dt;
+					car[myID].position.set(R[myID] * Math.cos(theta[myID]), 0, -R[myID] * Math.sin(theta[myID]))
+					car[myID].rotation.y = theta[myID];
+					if (isRun[myID]){
+						omega[myID] += 0.1;
+						fuel[myID] -= 0.3;
+						if (omega[myID] > 4) omega[myID] = 4;
+					} else {
+						if(omega[myID] != 0)fuel[myID] -= 0.03;
+						omega[myID] -= 0.02;
+						if (omega[myID] < 0) omega[myID] = 0;
+					}
+				}
+				if (fuel[myID] < 0) {
+					engine[myID] = false;
+					fuel[myID] = 0;
+				}
+				$('#fuel').text(fuel[myID].toFixed(2));
+			
+		}
+		if (otherID !== undefined) {
+				if (engine[otherID]) {
+					theta[otherID] += omega[otherID] * dt;
+					car[otherID].position.set(R[otherID] * Math.cos(theta[otherID]), 0, -R[otherID] * Math.sin(theta[otherID]))
+					car[otherID].rotation.y = theta[otherID];
+
+					if (isRun[otherID]){
+						omega[otherID] += 0.1;
+						fuel[otherID] -= 0.3;
+						if (omega[otherID] > 4) omega[otherID] = 4;
+					} else {
+						if(omega[otherID] != 0)fuel[otherID] -= 0.03;
+						omega[otherID] -= 0.02;
+						if (omega[otherID] < 0) omega[otherID] = 0;
+					}
+				}
+				if (fuel[otherID] < 0) {
+					engine[otherID] = false;
+					fuel[otherID] = 0;
+				}
+				$('#fuel').text(fuel[myID].toFixed(2));
+		
+		}
+	}
+	///////////////////////////////////////
+  
+	/*$.ajaxSetup({ async: false});
+	$.get("http://127.0.0.1:1337/api?step="+ step,  function( data ){
+		if(data && data.output){
+			var check = data.output.split (" ");
+			if(check[0] == 1){
+				
+			}*/
+			/*else{
+				$('#Collision').css ('color', 'white');
+				circle.material.color.setHSL( 1, 0, 1 );
+			}
+		}
+	});*/
+	if(car[0] && car[1] && myID != undefined && otherID != undefined && lock === 0) {
+		//io.emit('Ready' , function (socket){
+		lock++;
+		console.log('9998888898')
+		socket.emit ('isReady', myID);
+		//});
+	}
+	if(timetmp < 0) clearInterval(TT);
+}
+
+function startCount(time){
+	timetmp = time;
+	console.log(timetmp);
+	TT = setInterval (function() {countTime(timetmp);}, 1000);
+}
+
+function countTime(time){
+	if(time === 1) start = true;
+	$("#time").text(GO[4 - time]);
+	timetmp--;
+	//if(time > 0) setTimeout(countTime(time--), 1000);	
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+//////////////////Mouse function//////////////////
+
+function onDocumentMouseDown(event) {
+	var viewportPos =$('#container').get(0).getBoundingClientRect(); 
+	mouse.x = ((event.clientX - viewportPos.left) / $('#container').innerWidth()) * 2 - 1;
+	mouse.y = -((event.clientY - viewportPos.top) / $('#container').innerHeight()) * 2 + 1;
+
+	raycaster.setFromCamera(mouse, camera);
+	var intersects = raycaster.intersectObjects (pickables);
+	if (intersects.length > 0) {
+		rectangle.position.copy(intersects[0].point);
+	}
+}
+
+function onWindowResize() {
+
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+}
+
+function loadCarR(){  
+
+	var onProgress = function(xhr) {
+	if (xhr.lengthComputable) {
+	  var percentComplete = xhr.loaded / xhr.total * 100;
+	  console.log(Math.round(percentComplete, 2) + '% downloaded');
+	}
+	};
+
+	var onError = function(xhr) {};
+
+	//THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+	var mtlLoader = new THREE.MTLLoader();
+	mtlLoader.setPath('Model/Audi_R8_red/');
+	mtlLoader.load('audi-r8-red.mtl', function(materials) {
+
+	materials.preload();
+
+	var objLoader = new THREE.OBJLoader();
+	objLoader.setMaterials(materials);
+	objLoader.setPath('Model/Audi_R8_red/');
+	objLoader.load('audi-r8-red.obj', function(object) {
+			carR =  unitize (object, 45);
+			carR.visible = true;
+			carR.position.set(0,0.5,-40);
+			scene.add (carR);
+			car[0] = carR;
+			//////// MATERIAL ADJUSTMENT for porsche ///////////////
+			// transparent window: double-side fix
+			object.traverse (
+				function(mesh) {
+					if (mesh instanceof THREE.Mesh) {
+						mesh.material.side = THREE.DoubleSide;
+					}
+				});
+	}, onProgress, onError);
+	});	
+}
+
+function loadCarG(){  
+
+	var onProgress = function(xhr) {
+	if (xhr.lengthComputable) {
+	  var percentComplete = xhr.loaded / xhr.total * 100;
+	  console.log(Math.round(percentComplete, 2) + '% downloaded');
+	}
+	};
+
+	var onError = function(xhr) {};
+
+	//THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+	var mtlLoader = new THREE.MTLLoader();
+	mtlLoader.setPath('Model/nissan_GTR_nismo/');
+	mtlLoader.load('nissan-gt-r-nismo.mtl', function(materials) {
+
+	materials.preload();
+
+	var objLoader = new THREE.OBJLoader();
+	objLoader.setMaterials(materials);
+	objLoader.setPath('Model/nissan_GTR_nismo/');
+	objLoader.load('nissan-gt-r-nismo.obj', function(object) {
+			carG =  unitize (object, 45);
+			carG.visible = true;
+			carG.position.set(0,0.5,-40);
+			scene.add (carG);
+			car[1] = carG;
+			//////// MATERIAL ADJUSTMENT for porsche ///////////////
+			// transparent window: double-side fix
+			object.traverse (
+				function(mesh) {
+					if (mesh instanceof THREE.Mesh) {
+						mesh.material.side = THREE.DoubleSide;
+					}
+				});
+	}, onProgress, onError);
+	});	
+}
+
+</script>
+</body>
+
+</html>
