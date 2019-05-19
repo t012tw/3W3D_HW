@@ -13,7 +13,7 @@ body {
 <h1 style="text-align:center"> HW5: THE CAR</h1>
 <hr>
 <body>
-<div id="containerTop" style="position:absolute;top:70%;float:left; margin:3px; width:15%; height:27%">
+<div id="containerTop" style="position:absolute;top:37%;left:5.2%; margin:3px; width:20%; height:36%">
   <canvas id='topView'></canvas>
 </div>
 <div id="containerThird" style="position:absolute;top:10%;left:30%;background-color:pink; margin:3px; width:50%; height:50%">
@@ -22,11 +22,16 @@ body {
 <div id="containerRear" style="position:absolute;top:63%;left:30%;background-color:yellow; margin:3px; width:20%; height:36%">
   <canvas id='mirrorView'></canvas>
 </div>
-<div style="position:absolute; float:left; left:10.5%; width:10%; top:40%">
-  <button id="stepB" style="width:100%">Step</button>
-  <p id="fuel"></p>
+<div id="containerHUD" style="position:absolute;top:63%;left:55%;background-color:green; margin:3px; width:25%; height:36%">
+  <canvas id='HUDView'></canvas>
 </div>
-<p id="time" style="position:absolute;top:20%;left:12%;font-size:250%;color:red;"></p>
+<div style="position:absolute; float:left; left:56%; width:10%; top:65%">
+  <button id="stepB" style="width:100%">Gas! Gas! Gas!</button>
+  <p id="fuel" style="font-size:100%;color:orange"></p>
+  <p id="rpm" style="font-size:100%;color:orange"></p>
+</div>
+<p id="time" style="position:absolute;left:42%;font-size:1000%;color:red;"></p>
+<p id="winner" style="position:absolute;left:42%;font-size:1000%;color:red;"></p>
 <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
 <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
@@ -39,17 +44,15 @@ body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 
-<meta http-equiv="Access-Control-Allow-Origin" content="*">
-<?php header('Access-Control-Allow-Origin: *'); ?>
-
 <script>
 
 var cameraTop, scene, rendererTop;
 var cameraThird,rendererThird;
 var cameraRear,rendererRear,cameraRTT;
+var cameraHUD,sceneHUD,rendererHUD,barobj;
 var renderTarget;
 var omega = [], theta = [], R = [];
-var carR, carG;
+var carR, carG, carGbox;
 var car = [new THREE.Object3D(),new THREE.Object3D()];
 var clock = new THREE.Clock();
 var stepY = false,stepG = false;
@@ -112,6 +115,14 @@ $(function () {
 		}
 	
 	});
+	
+	socket.on ('winner', function (winner) {
+
+		if(winner === myID) $('#winner').text('You Win !!');
+		else if(winner != myID) $('#winner').text('You Lose !!');
+		
+	});
+	
 	console.log(myID)
 	console.log(otherID)
 
@@ -165,6 +176,18 @@ function init() {
 	);
 
 	////////////////////////////////////////////////
+	
+	var wwHUD = $("#containerHUD").innerWidth();
+	var hhHUD = $("#containerHUD").innerHeight();
+	var HUDv = document.getElementById('HUDView')
+	rendererHUD = new THREE.WebGLRenderer({
+		canvas: HUDv
+	});
+	rendererHUD.setSize(wwHUD, hhHUD);
+	rendererHUD.setClearColor(0x000000);
+	$("#containerHUD").append(rendererHUD.domElement);
+
+	////////////////////////////////////////////////
 
 	scene = new THREE.Scene();
 	cameraTop = new THREE.PerspectiveCamera(50, wwTop / hhTop, 1, 1000);
@@ -187,6 +210,13 @@ function init() {
 	
 	////////////////////////////////////////////////
 	
+	sceneHUD = new THREE.Scene();
+	cameraHUD = new THREE.PerspectiveCamera(50, wwHUD / hhHUD, 1, 1000);
+	cameraHUD.position.set(0,16.2,-7);
+	cameraHUD.lookAt(new THREE.Vector3(0,0,-7))
+	
+	////////////////////////////////////////////////
+	
 	var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
 	scene.add(gridXZ);
 
@@ -200,11 +230,11 @@ function init() {
 	theta[0] = 0;
 	omega[0] = 0;
 	R[0] = 60;
-	fuel[0] = 100;
+	fuel[0] = 300;
 	theta[1] = 0;
 	omega[1] = 0;
 	R[1] = 48;
-	fuel[1] = 100;
+	fuel[1] = 300;
 	//////////////// Line //////////////// 
 	let geometry = new THREE.Geometry();
 	for (var i = 0, alpha = 0; i <= 60; i++) {
@@ -229,22 +259,24 @@ function init() {
 	}));
 	scene.add(border2);
 	border2.computeLineDistances();
-	/////////////////////////////////////// 
+	//////////////// For HUD //////////////// 
+	
+	var circle = new THREE.Mesh( new THREE.CircleGeometry( 10, 64 ), new THREE.MeshBasicMaterial( { color: 0xffffff , side:THREE.DoubleSide} ));
+	circle.rotation.x += Math.PI/2;
+	circle.position.set(0,0,0);
+	barobj = new THREE.Object3D();
+	var bar = new THREE.Mesh(new THREE.PlaneGeometry( 9, 0.5), new THREE.MeshBasicMaterial( { color: 0x00ffff , side:THREE.DoubleSide } ));
+	bar.position.set(-4.5,0,0);
+	bar.rotation.x += Math.PI/2;
+	barobj.add(bar);
+	barobj.position.set(0,1,0);
+	sceneHUD.add( circle ,barobj);
+	console.log(circle.rotation)
+	///////////////////////////////////////	
 
-	/*carR = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 10), new THREE.MeshLambertMaterial({
-		color: 'yellow'
-	}));
-	scene.add(carR)
-	carG = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 10), new THREE.MeshLambertMaterial({
-		color: 'green'
-	}));
-	scene.add(carG)*/
-	
+	carGbox = new THREE.Object3D();
 	loadCarR();
-	loadCarG();	
-	/*car[0] = carR;
-	car[1] = carG;*/
-	
+	loadCarG();		
 	
 	// keyboard = new KeyboardState();
 }
@@ -276,7 +308,7 @@ function animate() {
 						fuel[myID] -= 0.3;
 						if (omega[myID] > 4) omega[myID] = 4;
 					} else {
-						if(omega[myID] != 0)fuel[myID] -= 0.03;
+						fuel[myID] -= 0.06;
 						omega[myID] -= 0.02;
 						if (omega[myID] < 0) omega[myID] = 0;
 					}
@@ -285,7 +317,10 @@ function animate() {
 					engine[myID] = false;
 					fuel[myID] = 0;
 				}
-				$('#fuel').text(fuel[myID].toFixed(2));
+				$('#fuel').text('Fuel : ' + fuel[myID].toFixed(2));
+				$('#rpm').text('RPM : ' + (omega[myID]/4*20000).toFixed() );
+				
+				barobj.rotation.y = -omega[myID]/4*Math.PI;
 			
 		}
 		if (otherID !== undefined) {
@@ -299,7 +334,7 @@ function animate() {
 						fuel[otherID] -= 0.3;
 						if (omega[otherID] > 4) omega[otherID] = 4;
 					} else {
-						if(omega[otherID] != 0)fuel[otherID] -= 0.03;
+						fuel[otherID] -= 0.06;
 						omega[otherID] -= 0.02;
 						if (omega[otherID] < 0) omega[otherID] = 0;
 					}
@@ -308,18 +343,27 @@ function animate() {
 					engine[otherID] = false;
 					fuel[otherID] = 0;
 				}
-				$('#fuel').text(fuel[myID].toFixed(2));
-		
+		}
+		if(!engine[myID] && !engine[otherID]){
+			if(theta[myID] > theta[otherID]) socket.emit('EndGame', myID );
+			else if(theta[myID] < theta[otherID]) socket.emit('EndGame', otherID );
 		}
 	}
 	//////////////For Cam move//////////////
 	//The third Cam
-	cameraThird.position.set(R[myID] * Math.cos(theta[myID] + 0.03), 5, -R[myID] * Math.sin(theta[myID] + 0.03));
-	cameraThird.lookAt(R[myID]*Math.cos(theta[myID]+0.21),0,-R[myID]*Math.sin(theta[myID]+0.21));
+	cameraThird.position.set((R[myID]) * Math.cos(theta[myID] - 0.3), 13, -(R[myID]) * Math.sin(theta[myID] - 0.3));
+	cameraThird.lookAt((R[myID]+7)*Math.cos(theta[myID]+0.5),0,-(R[myID]+7)*Math.sin(theta[myID]+0.5));
 	
 	//The Rear Cam
-	cameraRear.position.set(0.9 * R[myID] * Math.cos(theta[myID] + 0.1), 5, -0.9 * R[myID] * Math.sin(theta[myID] + 0.1));
-	cameraRear.lookAt(0.9 * R[myID] * Math.cos(theta[myID] - 0.21), 0, -0.9 * R[myID] * Math.sin(theta[myID] - 0.21))
+	
+	if(myID === 0) {
+		cameraRear.position.set(0.9 * R[myID] * Math.cos(theta[myID] + 0.1), 5, -0.9 * R[myID] * Math.sin(theta[myID] + 0.1));
+		cameraRear.lookAt(0.9 * R[myID] * Math.cos(theta[myID] - 0.21), 0, -0.9 * R[myID] * Math.sin(theta[myID] - 0.21))
+	}
+	else if(myID === 1) {
+		cameraRear.position.set(1.15 * R[myID] * Math.cos(theta[myID] + 0.1), 5, -1.15 * R[myID] * Math.sin(theta[myID] + 0.1));
+		cameraRear.lookAt(1.1 * R[myID] * Math.cos(theta[myID] - 0.21), 0, -1.1 * R[myID] * Math.sin(theta[myID] - 0.21))
+	}
 	
 	////////////////////////////////////////
 	if(car[0] && car[1] && carFinish1 && carFinish2 && myID != undefined && otherID != undefined && lock === 0) {
@@ -355,6 +399,11 @@ function render() {
 	rendererRear.render (scene, cameraRear); 
 	rendererRear.setRenderTarget (null);
 	rendererRear.render(sceneRTT, cameraRTT);
+
+	//cameraHUD.aspect = (WW/3) / HH;
+	cameraHUD.updateProjectionMatrix();
+	//rendererHUD.setViewport(0.5*WW  , 1, 0.5*WW, HH*2);
+	rendererHUD.render (sceneHUD, cameraHUD);
   
 }
 
@@ -399,9 +448,9 @@ function loadCarR(){
 	objLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/1967-shelby-ford-mustang/');
 
 	objLoader.load('1967-shelby-ford-mustang.obj', function(object) {
-			carR =  unitize (object, 45);
+			carR =  unitize (object, 25);
 			carR.visible = true;
-			carR.position.set(0,0.5,-40);
+			carR.position.set(60 * Math.cos(0), 0, -60 * Math.sin(0))
 			scene.add (carR);
 			car[0] = carR;
 			//////// MATERIAL ADJUSTMENT for porsche ///////////////
@@ -441,11 +490,14 @@ function loadCarG(){
 	objLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/peugeot-308/');
 	
 	objLoader.load('peugeot-308.obj', function(object) {
-			carG =  unitize (object, 45);
+			carG =  unitize (object, 25);
 			carG.visible = true;
-			carG.position.set(0,0.5,-40);
-			scene.add (carG);
-			car[1] = carG;
+			//carG.position.set(0,0.5,-40);
+			carG.rotation.y += Math.PI;
+			carGbox.add(carG);
+			carGbox.position.set(48 * Math.cos(0), 0, -48 * Math.sin(0))
+			scene.add (carGbox);
+			car[1] = carGbox;
 			//////// MATERIAL ADJUSTMENT for porsche ///////////////
 			// transparent window: double-side fix
 			object.traverse (

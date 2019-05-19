@@ -19,7 +19,7 @@ app.get('/', function(req, res){
 //
 var nID = 0;
 var status = [];
-var c1 = false , c2 = false;
+var c1 = false , c2 = false, w1 = false, w2 = false;
 var j = 0;
 var time = 5;
 
@@ -54,8 +54,8 @@ io.on('connect', function(socket){
   	for (i = 0; i < status.length; i++) {
   	  if (status[i].id === myID) break;
   	}
- 	status[i].run = !status[i].run;
- 	 	
+ 	status[i].run = !status[i].run; 	
+	
  	console.log (status);
   	io.emit ('update_status', status);
   });
@@ -68,7 +68,21 @@ io.on('connect', function(socket){
 			console.log('Both client load OK');
 			io.emit ('time', time);					
 		}
-	});
+  });
+	
+  socket.on('EndGame', function(winner) {
+		
+		if(winner === 0)w1 = true;
+		if(winner === 1)w2 = true;
+		
+		if(w1 && !w2){
+			io.emit ('winner', 0);					
+		}
+		else if(!w1 && w2){
+			io.emit ('winner', 1);	
+		}
+  });
+	
 });
 
 
