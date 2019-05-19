@@ -9,16 +9,24 @@ body {
 }
 </style>
 </head>
+
 <h1 style="text-align:center"> HW5: THE CAR</h1>
 <hr>
 <body>
-<div id="container" style="float:left; margin:3px; width:60vw; height:60vw">
+<div id="containerTop" style="position:absolute;top:70%;float:left; margin:3px; width:15%; height:27%">
+  <canvas id='topView'></canvas>
 </div>
-<div style="float:left; margin-left: 10px; width:32vw;">
+<div id="containerThird" style="position:absolute;top:10%;left:30%;background-color:pink; margin:3px; width:50%; height:50%">
+  <canvas id='frontView'></canvas>
+</div>
+<div id="containerRear" style="position:absolute;top:63%;left:30%;background-color:yellow; margin:3px; width:20%; height:36%">
+  <canvas id='mirrorView'></canvas>
+</div>
+<div style="position:absolute; float:left; left:10.5%; width:10%; top:40%">
   <button id="stepB" style="width:100%">Step</button>
   <p id="fuel"></p>
 </div>
-<p id="time" style="position:absolute;top:20%;left:78%;font-size:250%;color:red;"></p>
+<p id="time" style="position:absolute;top:20%;left:12%;font-size:250%;color:red;"></p>
 <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
 <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
@@ -31,10 +39,15 @@ body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 
+<meta http-equiv="Access-Control-Allow-Origin" content="*">
+<?php header('Access-Control-Allow-Origin: *'); ?>
 
 <script>
 
-var camera, scene, renderer;
+var cameraTop, scene, rendererTop;
+var cameraThird,rendererThird;
+var cameraRear,rendererRear,cameraRTT;
+var renderTarget;
 var omega = [], theta = [], R = [];
 var carR, carG;
 var car = [new THREE.Object3D(),new THREE.Object3D()];
@@ -49,6 +62,7 @@ var myID, otherID;  // either 0 or 1
 var lock = 0;
 var TT , timetmp, start = false;
 var GO = ['3','2','1','GO!',''];
+var carFinish1 = false, carFinish2 = false;
 
 $("#stepB").on('mousedown', function(e) {
   console.log('mouse down')
@@ -64,7 +78,7 @@ $("#stepB").on('mousedown', function(e) {
 $(function () {
 
 	//socket = io();
-		
+	
 	socket.on ('id_set', function(msg) { //id_set事件，向server要一個ClientID
 		console.log ('i am ' + msg);
 
@@ -108,19 +122,71 @@ animate();
 
 function init() {
 
-	var ww = $("#container").innerWidth();
-	var hh = $("#container").innerHeight();
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize(ww, hh);
-	renderer.setClearColor(0x888888);
-	$("#container").append(renderer.domElement);
+	var wwTop = $("#containerTop").innerWidth();
+	var hhTop = $("#containerTop").innerHeight();
+	var tv = document.getElementById('topView')
+	rendererTop = new THREE.WebGLRenderer({
+		canvas: tv
+	});
+	rendererTop.setSize(wwTop, hhTop);
+	rendererTop.setClearColor(0x888888);
+	$("#containerTop").append(rendererTop.domElement);
+
+	////////////////////////////////////////////////
+	
+	var wwThird = $("#containerThird").innerWidth();
+	var hhThird = $("#containerThird").innerHeight();
+	var thv = document.getElementById('frontView')
+	rendererThird = new THREE.WebGLRenderer({
+		canvas: thv
+	});
+	rendererThird.setSize(wwThird, hhThird);
+	rendererThird.setClearColor(0x888888);
+	$("#containerThird").append(rendererThird.domElement);
+
+	////////////////////////////////////////////////
+	
+	var wwRear = $("#containerRear").innerWidth();
+	var hhRear = $("#containerRear").innerHeight();
+	var rv = document.getElementById('mirrorView')
+	rendererRear = new THREE.WebGLRenderer({
+		canvas: rv
+	});
+	rendererRear.setSize(wwRear, hhRear);
+	rendererRear.setClearColor(0x888888);
+	$("#containerRear").append(rendererRear.domElement);
+	
+	renderTarget = new THREE.WebGLRenderTarget(
+		1024, 1024, {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.NearestFilter,
+			format: THREE.RGBFormat
+		}
+	);
 
 	////////////////////////////////////////////////
 
 	scene = new THREE.Scene();
-	camera = new THREE.PerspectiveCamera(50, ww / hh, 1, 1000);
-	camera.position.set(0, 200, 300);
-
+	cameraTop = new THREE.PerspectiveCamera(50, wwTop / hhTop, 1, 1000);
+	cameraTop.position.set(0,200, 0);
+	cameraTop.lookAt(new THREE.Vector3(0,0,0));
+	
+	////////////////////////////////////////////////
+	
+	cameraThird = new THREE.PerspectiveCamera(50, wwThird / hhThird, 1, 1000);
+	
+	////////////////////////////////////////////////
+	sceneRTT = new THREE.Scene();
+	cameraRear = new THREE.PerspectiveCamera(50, wwRear / hhRear, 1, 1000);
+	plane = new THREE.Mesh (new THREE.PlaneGeometry(20,20),
+	new THREE.MeshBasicMaterial({map:renderTarget.texture, side:THREE.DoubleSide}));
+	sceneRTT.add (plane);
+	plane.rotation.y = Math.PI;
+	
+	cameraRTT = new THREE.OrthographicCamera (-10,10,10,-10, 0,20);
+	
+	////////////////////////////////////////////////
+	
 	var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
 	scene.add(gridXZ);
 
@@ -128,8 +194,8 @@ function init() {
 	light.position.set(100, 300, 200);
 	scene.add(light);
 
-	let controls = new THREE.OrbitControls(camera, renderer.domElement);
-	window.addEventListener('resize', onWindowResize, false);
+	//let controls = new THREE.OrbitControls(camera, renderer.domElement);
+	//window.addEventListener('resize', onWindowResize, false);
 	/////////////
 	theta[0] = 0;
 	omega[0] = 0;
@@ -176,27 +242,23 @@ function init() {
 	
 	loadCarR();
 	loadCarG();	
+	/*car[0] = carR;
+	car[1] = carG;*/
+	
 	
 	// keyboard = new KeyboardState();
 }
 
-function onWindowResize() {
+/*function onWindowResize() {
   var ww = $("#container").innerWidth();
   var hh = $("#container").innerHeight();
 
   camera.aspect = ww / hh;
   camera.updateProjectionMatrix();
   renderer.setSize(ww, hh);
-}
+}*/
 
 function animate() {
-	/*
-	keyboard.update();
-	if (keyboard.pressed("S"))
-		step = true;
-	else
-		step = false;
-	*/
 
 	requestAnimationFrame(animate);
 	render();
@@ -250,22 +312,17 @@ function animate() {
 		
 		}
 	}
-	///////////////////////////////////////
-  
-	/*$.ajaxSetup({ async: false});
-	$.get("http://127.0.0.1:1337/api?step="+ step,  function( data ){
-		if(data && data.output){
-			var check = data.output.split (" ");
-			if(check[0] == 1){
-				
-			}*/
-			/*else{
-				$('#Collision').css ('color', 'white');
-				circle.material.color.setHSL( 1, 0, 1 );
-			}
-		}
-	});*/
-	if(car[0] && car[1] && myID != undefined && otherID != undefined && lock === 0) {
+	//////////////For Cam move//////////////
+	//The third Cam
+	cameraThird.position.set(R[myID] * Math.cos(theta[myID] + 0.03), 5, -R[myID] * Math.sin(theta[myID] + 0.03));
+	cameraThird.lookAt(R[myID]*Math.cos(theta[myID]+0.21),0,-R[myID]*Math.sin(theta[myID]+0.21));
+	
+	//The Rear Cam
+	cameraRear.position.set(0.9 * R[myID] * Math.cos(theta[myID] + 0.1), 5, -0.9 * R[myID] * Math.sin(theta[myID] + 0.1));
+	cameraRear.lookAt(0.9 * R[myID] * Math.cos(theta[myID] - 0.21), 0, -0.9 * R[myID] * Math.sin(theta[myID] - 0.21))
+	
+	////////////////////////////////////////
+	if(car[0] && car[1] && carFinish1 && carFinish2 && myID != undefined && otherID != undefined && lock === 0) {
 		//io.emit('Ready' , function (socket){
 		lock++;
 		console.log('9998888898')
@@ -289,38 +346,40 @@ function countTime(time){
 }
 
 function render() {
-  renderer.render(scene, camera);
+
+	rendererTop.render(scene, cameraTop);
+	
+	rendererThird.render(scene, cameraThird);
+  
+	rendererRear.setRenderTarget (renderTarget);
+	rendererRear.render (scene, cameraRear); 
+	rendererRear.setRenderTarget (null);
+	rendererRear.render(sceneRTT, cameraRTT);
+  
 }
 
 //////////////////Mouse function//////////////////
 
 function onDocumentMouseDown(event) {
-	var viewportPos =$('#container').get(0).getBoundingClientRect(); 
+	var viewportPos =$('#containerTop').get(0).getBoundingClientRect(); 
 	mouse.x = ((event.clientX - viewportPos.left) / $('#container').innerWidth()) * 2 - 1;
 	mouse.y = -((event.clientY - viewportPos.top) / $('#container').innerHeight()) * 2 + 1;
 
-	raycaster.setFromCamera(mouse, camera);
+	raycaster.setFromCamera(mouse, cameraTop);
 	var intersects = raycaster.intersectObjects (pickables);
 	if (intersects.length > 0) {
 		rectangle.position.copy(intersects[0].point);
 	}
 }
 
-function onWindowResize() {
-
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
-}
 
 function loadCarR(){  
 
 	var onProgress = function(xhr) {
 	if (xhr.lengthComputable) {
 	  var percentComplete = xhr.loaded / xhr.total * 100;
-	  console.log(Math.round(percentComplete, 2) + '% downloaded');
+	  console.log( + '% downloaded');
+	  if(Math.round(percentComplete, 2) === 100) carFinish1 = true;
 	}
 	};
 
@@ -329,15 +388,17 @@ function loadCarR(){
 	//THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
 
 	var mtlLoader = new THREE.MTLLoader();
-	mtlLoader.setPath('Model/Audi_R8_red/');
-	mtlLoader.load('audi-r8-red.mtl', function(materials) {
+	mtlLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/1967-shelby-ford-mustang/');
+
+	mtlLoader.load('1967-shelby-ford-mustang.mtl', function(materials) {
 
 	materials.preload();
 
 	var objLoader = new THREE.OBJLoader();
 	objLoader.setMaterials(materials);
-	objLoader.setPath('Model/Audi_R8_red/');
-	objLoader.load('audi-r8-red.obj', function(object) {
+	objLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/1967-shelby-ford-mustang/');
+
+	objLoader.load('1967-shelby-ford-mustang.obj', function(object) {
 			carR =  unitize (object, 45);
 			carR.visible = true;
 			carR.position.set(0,0.5,-40);
@@ -361,6 +422,7 @@ function loadCarG(){
 	if (xhr.lengthComputable) {
 	  var percentComplete = xhr.loaded / xhr.total * 100;
 	  console.log(Math.round(percentComplete, 2) + '% downloaded');
+	  if(Math.round(percentComplete, 2) === 100) carFinish2 = true;
 	}
 	};
 
@@ -369,15 +431,16 @@ function loadCarG(){
 	//THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
 
 	var mtlLoader = new THREE.MTLLoader();
-	mtlLoader.setPath('Model/nissan_GTR_nismo/');
-	mtlLoader.load('nissan-gt-r-nismo.mtl', function(materials) {
+	mtlLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/peugeot-308/');
+	mtlLoader.load('peugeot-308.mtl', function(materials) {
 
 	materials.preload();
 
 	var objLoader = new THREE.OBJLoader();
 	objLoader.setMaterials(materials);
-	objLoader.setPath('Model/nissan_GTR_nismo/');
-	objLoader.load('nissan-gt-r-nismo.obj', function(object) {
+	objLoader.setPath('https://t012tw.github.io/3W3D_HW/HW5/Model/peugeot-308/');
+	
+	objLoader.load('peugeot-308.obj', function(object) {
 			carG =  unitize (object, 45);
 			carG.visible = true;
 			carG.position.set(0,0.5,-40);
@@ -393,6 +456,35 @@ function loadCarG(){
 				});
 	}, onProgress, onError);
 	});	
+}
+
+function unitize (object, targetSize) {  
+	
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+	// uniform scaling according to objSize
+	var objSize = findMax (size);
+	var scaleSet = targetSize/objSize;	
+	var theObject =  new THREE.Object3D();
+	theObject.add (object);
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	object.position.set (-center.x*scaleSet, -center.y*scaleSet + size.y/2*scaleSet, -center.z*scaleSet);
+	return theObject;
+	// helper function
+	function findMax(v) {
+		if (v.x > v.y) {
+			return v.x > v.z ? v.x : v.z;
+		} else { // v.y > v.x
+			return v.y > v.z ? v.y : v.z;
+		} 
+	}	
 }
 
 </script>

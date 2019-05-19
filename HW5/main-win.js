@@ -3,7 +3,6 @@ var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var shelljs = require('shelljs');
 
-
 var port = 3000;
 server.listen (port, function() {
   console.log ('listening on port ' + port)
@@ -40,7 +39,7 @@ io.on('connect', function(socket){
   // inform the status of all other clients ...
   // new kid needs to learn about old fellows
   
-  status.push ({id: nID, run: false});
+  status.push ({id: nID, run: false, load: false});
   console.log (status);
   io.emit ('update_status', status)
   
@@ -66,15 +65,8 @@ io.on('connect', function(socket){
 		if(ID === 0)c1 = true;
 		if(ID === 1)c2 = true;
 		if(c1 && c2){
-			console.log('15154')
-			/*for(j ; j++ ; j < 3){
-				console.log(time)
-				setTimeout(function(time){
-					console.log(time)*/
-					io.emit ('time', time);
-					/*time--;
-				}, 1000)
-			}*/
+			console.log('Both client load OK');
+			io.emit ('time', time);					
 		}
 	});
 });
